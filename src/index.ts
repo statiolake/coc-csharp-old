@@ -1,54 +1,20 @@
-import { commands, CompleteResult, ExtensionContext, listManager, sources, window, workspace } from 'coc.nvim';
-import DemoList from './lists';
+import { ExtensionContext, OutputChannel, window, workspace } from 'coc.nvim';
+import { Config } from './config';
+import * as omnisharp from './omnisharp/main';
 
-export async function activate(context: ExtensionContext): Promise<void> {
-  window.showMessage(`coc-csharp works!`);
-
-  context.subscriptions.push(
-    commands.registerCommand('coc-csharp.Command', async () => {
-      window.showMessage(`coc-csharp Commands works!`);
-    }),
-
-    listManager.registerList(new DemoList(workspace.nvim)),
-
-    sources.createSource({
-      name: 'coc-csharp completion source', // unique id
-      doComplete: async () => {
-        const items = await getCompletionItems();
-        return items;
-      },
-    }),
-
-    workspace.registerKeymap(
-      ['n'],
-      'csharp-keymap',
-      async () => {
-        window.showMessage(`registerKeymap`);
-      },
-      { sync: false }
-    ),
-
-    workspace.registerAutocmd({
-      event: 'InsertLeave',
-      request: true,
-      callback: () => {
-        window.showMessage(`registerAutocmd on InsertLeave`);
-      },
-    })
-  );
+declare global {
+  var logger: OutputChannel;
 }
 
-async function getCompletionItems(): Promise<CompleteResult> {
-  return {
-    items: [
-      {
-        word: 'TestCompletionItem 1',
-        menu: '[coc-csharp]',
-      },
-      {
-        word: 'TestCompletionItem 2',
-        menu: '[coc-csharp]',
-      },
-    ],
-  };
+export async function activate(context: ExtensionContext): Promise<void> {
+  logger = window.createOutputChannel('coc-csharp');
+  logger.appendLine(`activating coc-csharp...`);
+  logger.appendLine(`workspace root: ${workspace.root}`);
+
+  const config = new Config();
+
+  // register omnisharp
+  await omnisharp.activate(config, context);
+
+  logger.appendLine(`activated coc-csharp.`);
 }
